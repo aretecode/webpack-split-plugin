@@ -1,11 +1,11 @@
 const log = require('fliplog')
 const Cleaner = require('./cleaner')
-const CollectionManager = require('./ChunkSplitter')
+const CollectionManager = require('./CollectionManager')
 
 const collection = new CollectionManager()
 let nextIdent = 0
 
-class CustomSplitPlugin {
+class WebpackSplitPlugin {
   constructor(options) {
     this.shouldDebug = options.debug || false
     collection.debug(options.debug || false)
@@ -330,7 +330,7 @@ Take a look at the "name"/"names" or async/children option.`
     if (targetChunk.parents.length > 0) {
       compilation.errors.push(
         new Error(
-          "CustomSplitPlugin: While running in normal mode it's not allowed to use a non-entry chunk (" +
+          "WebpackSplitPlugin: While running in normal mode it's not allowed to use a non-entry chunk (" +
             targetChunk.name +
             ')'
         )
@@ -581,4 +581,4 @@ Take a look at the "name"/"names" or async/children option.`
   }
 }
 
-module.exports = CustomSplitPlugin
+module.exports = WebpackSplitPlugin

@@ -1,0 +1,43 @@
+{
+  "name": "webpack-split-plugin",
+  "version": "0.1.1",
+  "description": "custom code splitting in webpack [wip]",
+  "main": "index.js",
+  "module": "index.js",
+  "scripts": {
+    "test": "ava --verbose"
+  },
+  "dependencies": {
+    "chain-able": "^1.0.0",
+    "file-chain": "^0.0.3",
+    "flipfile": "^0.0.13",
+    "fliplog": "^0.2.7",
+    "lodash.clonedeep": "^4.5.0"
+  },
+  "devDependencies": {
+    "ava": "*",
+    "webpack": "*"
+  },
+  "keywords": [
+    "webpack",
+    "chain-able",
+    "plugin",
+    "fluent",
+    "chain",
+    "split"
+  ],
+  "license": "MIT",
+  "author": "James <aretecode@gmail.com>",
+  "contributors": [
+    "James <aretecode@gmail.com>",
+    "yesvods <jogis@itanguo.cn>"
+  ],
+  "homepage": "https://github.com/aretecode/webpack-split-plugin#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aretecode/webpack-split-plugin.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aretecode/webpack-split-plugin/issues"
+  }
+}

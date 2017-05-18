@@ -3,7 +3,7 @@ var pkg = require('./package.json')
 var webpack = require('webpack')
 var log = require('fliplog')
 var HtmlWebpackPlugin = require('webpack-html-plugin')
-var CustomSplitPlugin = require('./CustomSplitPlugin')
+var WebpackSplitPlugin = require('./webpack-split-plugin')
 
 var rootPath = path.resolve(__dirname, '.')
 var alias = {
@@ -59,7 +59,7 @@ var config = {
   externals: {},
 
   plugins: [
-    new CustomSplitPlugin({
+    new WebpackSplitPlugin({
       debug: true,
       name: 'eh',
       filename: '[name]-split.js',
