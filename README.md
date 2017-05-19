@@ -29,7 +29,11 @@ https://github.com/webpack/webpack/blob/85dc98f17aa39d5d3337e3791bf25634a1f7e445
 https://github.com/webpack/docs/wiki/how-to-write-a-plugin#exploring-assets-chunks-modules-and-dependencies
 https://github.com/webpack/docs/wiki/plugins
 
+# src
+https://github.com/webpack/webpack/blob/master/lib/Chunk.js
 
+// WHAT IS THIS EVEN
+https://github.com/webpack/webpack/blob/028c51301733836abbedc88be7483af2623f5943/lib/ModuleReason.js
 
 --------
 

@@ -1,20 +1,23 @@
 var path = require('path')
 var pkg = require('./package.json')
 var webpack = require('webpack')
-var Chunker = require('./Chunker')
+var log = require('fliplog')
+var HtmlWebpackPlugin = require('webpack-html-plugin')
+var CustomSplitPlugin = require('./CustomSplitPlugin')
+
 var rootPath = path.resolve(__dirname, '.')
 var alias = {
   src: rootPath + '/src',
 }
-var log = require('fliplog')
 
 var config = {
+  cache: false,
   entry: {
     index: ['./src/index.js'],
   },
   output: {
-    path: rootPath + '/disted',
-    publicPath: '/build/',
+    path: rootPath + '/demo',
+    publicPath: './',
     filename: '[name].js',
     libraryTarget: 'amd',
     library: 'demo',
@@ -26,7 +29,13 @@ var config = {
     rules: [
       {
         test: /\.js$/,
-        exclude: /node_modules/,
+
+        // @NOTE: included node_modules and target uglify to minify with es6
+        // but it really should use babili instead,
+        // but this is a simple example so
+        //
+        // exclude: /node_modules/,
+
         use: [
           {
             loader: 'babel-loader',
@@ -46,14 +55,21 @@ var config = {
       },
     ],
   },
+
   externals: {},
 
   plugins: [
-    new Chunker({
+    new CustomSplitPlugin({
+      debug: true,
       name: 'eh',
-      minChunks: 0,
-      // pieces: 2,
+      filename: '[name]-split.js',
+
+      // optional, figures it out after first run, needs to go in docs
+      totalSize: '1937kb', // 1.937mb
     }),
+
+    // no need to use this currently, but can be helpful (when cache is off)
+    // new HtmlWebpackPlugin(),
   ],
 }
 

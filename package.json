@@ -1,27 +1,34 @@
 {
   "name": "split-demo",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "webpack --progress --display-modules --display-chunks"
+    "build": "webpack --progress --display-modules --display-chunks",
+    "build:prod": "webpack -p --optimize-minimize"
   },
   "author": "",
   "license": "ISC",
+  "dependencies": {
+    "material-ui": "^0.18.1"
+  },
   "devDependencies": {
     "babel-core": "^6.24.1",
     "babel-loader": "^7.0.0",
+    "babel-preset-env": "^1.4.0",
     "babel-preset-es2015": "^6.24.1",
     "babel-preset-stage-0": "^6.24.1",
     "chain-able": "^1.0.0",
     "file-chain": "^0.0.3",
     "flipfile": "^0.0.13",
     "fliplog": "^0.2.7",
-    "material-ui": "^0.18.1",
+    "lodash.clonedeep": "^4.5.0",
+    "noop3": "^999.999.999",
     "react": "^15.5.4",
     "react-dom": "^15.5.4",
     "sass-loader": "^6.0.5",
     "style-loader": "^0.17.0",
-    "webpack": "^2.5.1"
+    "webpack": "^2.5.1",
+    "webpack-html-plugin": "^0.1.1"
   }
 }
