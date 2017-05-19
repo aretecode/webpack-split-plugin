@@ -1,20 +1,29 @@
-const log = require('fliplog')
-const CollectionManager = require('./ChunkSplitter')
-const collection = new CollectionManager()
 let nextIdent = 0
+const log = require('fliplog')
+// const cleaner = require('./cleaner')
 
-/**
- * @see https://github.com/webpack/webpack/blob/cd1cd29fba46bd0133db0ca89acbe6c6c0240323/lib/optimize/CommonsChunkPlugin.js
- * @TODO
- * - [ ] NEEDS ASYNC
- * - [ ] finish this
- * - [ ] needs merge with CollectionManager
- * - [ ] needs to be split out of the example demo
- * - [ ] setup debug config *levels*
- * - [ ] see todos in .apply
- */
-class SpecificChunkPlugin {
+class CommonsChunkPlugin {
   constructor(options) {
+    if (arguments.length > 1) {
+      throw new Error(
+        `Deprecation notice: CommonsChunkPlugin now only takes a single argument. Either an options
+object *or* the name of the chunk.
+Example: if your old code looked like this:
+	new webpack.optimize.CommonsChunkPlugin('vendor', 'vendor.bundle.js')
+You would change it to:
+	new webpack.optimize.CommonsChunkPlugin({ name: 'vendor', filename: 'vendor.bundle.js' })
+The available options are:
+	name: string
+	names: string[]
+	filename: string
+	minChunks: number
+	chunks: string[]
+	children: boolean
+	async: boolean
+	minSize: number`
+      )
+    }
+
     const normalizedOptions = this.normalizeOptions(options)
 
     this.chunkNames = normalizedOptions.chunkNames
@@ -79,109 +88,22 @@ You can however specify the name of the async chunk by passing the desired strin
   }
 
   apply(compiler) {
-    // ------------------------------------------------------------
     compiler.plugin('this-compilation', compilation => {
-      // this will happen for each file
-      compilation.plugin(['build-module'], module => {
-        collection.handle(module)
-        // @TODO @FIXME @HACK remove this, just for debugging the output
-        // let timeout = 0
-        // clearTimeout(timeout)
-        // timeout = setTimeout(() => {
-        //   log.verbose(1000).data(collection).bold('dun').exit()
-        // }, 1000)
-        // log.verbose(1).data(Object.keys(module)).bold('build it ').echo()
-        // log.verbose(1).data(deps).bold('build it ').echo()
-        // log.verbose(1).data(module).bold('build it ').echo()
-      })
-
-      // this will happen when we are all done!
       compilation.plugin(
         ['optimize-chunks', 'optimize-extracted-chunks'],
         chunks => {
           // only optimize once
           if (compilation[this.ident]) return
           compilation[this.ident] = true
-          collection.complete()
-
-          // @TODO should be more dynamic
-          const chunk1 = compilation.addChunk('chunk1')
-          const chunk2 = compilation.addChunk('chunk2')
-          const groups = collection.getCollections()
-          const group1 = groups[0]
-          const group2 = groups[1]
-
-          // this is so we can remove grouped chunks from entry point
-          // map groups to get back modules
-          // map modules to userRequest, to simplify filtering entries
-          // flatten
-          const filenames = [].concat(
-            ...groups.map(group => group.map(file => file.filename))
-          )
-
-          // @TODO - careful:
-          //  should be more careful with this,
-          //  like check .entryPoints.length
-          const entryModule = chunks[0]
-
-          log.verbose(2).data({ groups }).echo()
-
-          // @see @todo above with dynamic
-          group1.forEach(file => {
-            const module = file.module
-            chunk1.addModule(module)
-            module.addChunk(chunk1)
-          })
-          group2.forEach(file => {
-            const module = file.module
-            chunk2.addModule(module)
-            module.addChunk(chunk2)
-          })
-
-          log
-            .blue('length of modules before filter:')
-            .data(entryModule.modules.length)
-            .echo()
-            .green('all filenames:')
-            .verbose(500)
-            .data(filenames)
-            .echo(false)
-
-          // @TODO better way?:
-          // is this the best way?
-          // should call .removeModule from all entry points??
-          // ENSURE INTEGRITY OF ALL MODULE REFERENCES IN ENTRY
-          entryModule.modules = entryModule.modules.filter(entryChunk => {
-            const request = entryChunk.userRequest
-
-            // undefined on entry chunk
-            log
-              .dim('request: ' + request)
-              .data(filenames.includes(request))
-              .echo()
-
-            return !filenames.includes(request)
-          })
-
-          log.bold('after:').data(entryModule.modules.length).echo()
-
-          // remove all the modules from memory
-          collection.collections.clear()
-
-          // log.verbose(3).data({ chunks }).exit()
-          log.verbose(2).data(chunks).bold('chunk it ' + this.ident).echo()
-          return true
-
-          // ------------------------------------------------------------
 
           /**
-  				 * Creates a list of "common"" chunks based on the options.
-  				 * The list is made up of preexisting or newly created chunks.
-  				 * - If chunk has the name as specified in the chunkNames it is put in the list
-  				 * - If no chunk with the name as given in chunkNames exists a new chunk is created and added to the list
-  				 *
-  				 * These chunks are the "targets" for extracted modules.
-  				 */
+				 * Creates a list of "common"" chunks based on the options.
+				 * The list is made up of preexisting or newly created chunks.
+				 * - If chunk has the name as specified in the chunkNames it is put in the list
+				 * - If no chunk with the name as given in chunkNames exists a new chunk is created and added to the list
+				 *
+				 * These chunks are the "targets" for extracted modules.
+				 */
           const targetChunks = this.getTargetChunks(
             chunks,
             compilation,
@@ -193,8 +115,8 @@ You can however specify the name of the async chunk by passing the desired strin
           // iterate over all our new chunks
           targetChunks.forEach((targetChunk, idx) => {
             /**
-  					 * These chunks are subject to get "common" modules extracted and moved to the common chunk
-  					 */
+					 * These chunks are subject to get "common" modules extracted and moved to the common chunk
+					 */
             const affectedChunks = this.getAffectedChunks(
               compilation,
               chunks,
@@ -224,8 +146,8 @@ You can however specify the name of the async chunk by passing the desired strin
             }
 
             /**
-  					 * Check which modules are "common" and could be extracted to a "common" chunk
-  					 */
+					 * Check which modules are "common" and could be extracted to a "common" chunk
+					 */
             const extractableModules = this.getExtractableModules(
               this.minChunks,
               affectedChunks,
@@ -286,6 +208,7 @@ You can however specify the name of the async chunk by passing the desired strin
     })
   }
 
+  // - [x]
   getTargetChunks(allChunks, compilation, chunkNames, children, asyncOption) {
     const asyncOrNoSelectedChunk = children || asyncOption
 
@@ -362,7 +285,7 @@ Take a look at the "name"/"names" or async/children option.`
     if (targetChunk.parents.length > 0) {
       compilation.errors.push(
         new Error(
-          "SpecificChunkPlugin: While running in normal mode it's not allowed to use a non-entry chunk (" +
+          "CommonsChunkPlugin: While running in normal mode it's not allowed to use a non-entry chunk (" +
             targetChunk.name +
             ')'
         )
@@ -453,7 +376,18 @@ Take a look at the "name"/"names" or async/children option.`
   calculateModulesSize(modules) {
     return modules.reduce((totalSize, module) => totalSize + module.size(), 0)
   }
+  addExtractedModulesToTargetChunk(chunk, modules) {
+    for (let module of modules) {
+      chunk.addModule(module)
+      module.addChunk(chunk)
+    }
+  }
 
+  // ********************************************
+  // @important *********************************
+  // ********************************************
+
+  // - [x]
   extractModulesAndReturnAffectedChunks(reallyUsedModules, usedChunks) {
     return reallyUsedModules.reduce((affectedChunksSet, module) => {
       for (let chunk of usedChunks) {
@@ -467,14 +401,14 @@ Take a look at the "name"/"names" or async/children option.`
     }, new Set())
   }
 
-  addExtractedModulesToTargetChunk(chunk, modules) {
-    for (let module of modules) {
-      chunk.addModule(module)
-      module.addChunk(chunk)
-    }
-  }
-
+  // - [ ]
   makeTargetChunkParentOfAffectedChunks(usedChunks, commonChunk) {
+    log.dim('it inserts chunk with parents...').echo()
+    // log
+    //   .verbose(4)
+    //   .data({ parents: chunk.parents, entrypoints: chunk.entrypoints })
+    //   .echo()
+
     for (let chunk of usedChunks) {
       // set commonChunk as new sole parent
       chunk.parents = [commonChunk]
@@ -484,9 +418,18 @@ Take a look at the "name"/"names" or async/children option.`
       for (let entrypoint of chunk.entrypoints) {
         entrypoint.insertChunk(commonChunk, chunk)
       }
+      log
+        .verbose(5)
+        .data({ parents: chunk.parents, entrypoints: chunk.entrypoints })
+        .echo()
     }
   }
 
+  // ********************************************
+  // @async *************************************
+  // ********************************************
+
+  // - [ ]
   moveExtractedChunkBlocksToTargetChunk(chunks, targetChunk) {
     for (let chunk of chunks) {
       for (let block of chunk.blocks) {
@@ -496,6 +439,7 @@ Take a look at the "name"/"names" or async/children option.`
     }
   }
 
+  // - [ ]
   extractOriginsOfChunksWithExtractedModules(chunks) {
     const origins = []
     for (let chunk of chunks) {
@@ -509,4 +453,4 @@ Take a look at the "name"/"names" or async/children option.`
   }
 }
 
-module.exports = SpecificChunkPlugin
+module.exports = CommonsChunkPlugin

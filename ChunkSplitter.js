@@ -65,6 +65,7 @@ class File {
  * - [ ] add config to name output pieces
  * - [ ] improve debug output for which collection is being used
  * - [ ] todos in addcollection (not dynamic)
+ * - [ ] callback customizer fns
  */
 class CollectionManager extends ChainedMap {
   /**
@@ -94,7 +95,6 @@ class CollectionManager extends ChainedMap {
       .extendAddition(['totalSize', 'currentSize'])
       .totalSize(persistance.get('totalSize'))
       .set('complete', false)
-      .debug(true)
       .pieces(options.pieces) // can do from
       .group(0)
 
@@ -134,7 +134,9 @@ class CollectionManager extends ChainedMap {
 
     const sizeAsPieces = totalSize / pieces
 
-    log.data({ sizeAsPieces, totalSize, pieces }).echo(false)
+    log
+      .data({ sizeAsPieces, currentSize, totalSize, pieces })
+      .echo(this.get('debug'))
 
     if (currentSize > sizeAsPieces) {
       log.cyan('using collection 1').echo(this.get('debug'))

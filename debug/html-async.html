@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+</head>
+<body>
+<script src="https://g.alicdn.com/mui/feloader/4.0.22/feloader-min.js"></script>
+<script async src="./eh-split.js"></script>
+<script async src="./index.js"></script>
+<!-- <script src="./bundle.js"></script> -->
+<script async>
+setInterval(() => {
+  if (window.eh && window.index) {
+    require('demo', x => {
+      console.log('Load Finish', x)
+    })
+  } else {
+    console.log('still loading')
+  }
+}, 100)
+</script>
+</body>
+</html>
