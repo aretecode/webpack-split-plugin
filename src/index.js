@@ -1,3 +1,4 @@
+require('./index.scss')
 require('material-ui')
 const eh = require('./test')
 const noop = require('./noop')
