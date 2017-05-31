@@ -49,6 +49,9 @@ var config = {
             loader: 'style-loader',
           },
           {
+            loader: 'css-loader',
+          },
+          {
             loader: 'sass-loader',
           },
         ],
@@ -65,7 +68,7 @@ var config = {
       filename: '[name]-split.js',
 
       // optional, figures it out after first run, needs to go in docs
-      totalSize: '1937kb', // 1.937mb
+      // totalSize: '1937kb', // 1.937mb
     }),
 
     // no need to use this currently, but can be helpful (when cache is off)
