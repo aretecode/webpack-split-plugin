@@ -1428,11 +1428,11 @@ function isNative(fn) {
   var hasOwnProperty = Object.prototype.hasOwnProperty;
   var reIsNative = RegExp('^' + funcToString
   // Take an example native function source for comparison
-  .call(hasOwnProperty)
+  .call(hasOwnProperty
   // Strip regex characters so we can use it for regex
-  .replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')
+  ).replace(/[\\^$.*+?()[\]{}|]/g, '\\$&'
   // Remove hasOwnProperty from the template to make it generic
-  .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$');
+  ).replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$');
   try {
     var source = funcToString.call(fn);
     return reIsNative.test(source);
@@ -1767,10 +1767,10 @@ exports = module.exports = function (searchInput) {
   if ('number' === typeof searchInput) return names[searchInput];
 
   // Everything else (cast to string)
-  var search = String(searchInput);
+  var search = String(searchInput
 
   // check codes
-  var foundNamedKey = codes[search.toLowerCase()];
+  );var foundNamedKey = codes[search.toLowerCase()];
   if (foundNamedKey) return foundNamedKey;
 
   // check aliases
@@ -1833,11 +1833,10 @@ var codes = exports.code = exports.codes = {
   '\\': 220,
   ']': 221,
   "'": 222
-};
 
-// Helper aliases
+  // Helper aliases
 
-var aliases = exports.aliases = {
+};var aliases = exports.aliases = {
   'windows': 91,
   '⇧': 16,
   '⌥': 18,
@@ -1857,14 +1856,13 @@ var aliases = exports.aliases = {
   'ins': 45,
   'del': 46,
   'cmd': 91
-};
 
-/*!
- * Programatically add the following
- */
+  /*!
+   * Programatically add the following
+   */
 
-// lower case chars
-for (i = 97; i < 123; i++) {
+  // lower case chars
+};for (i = 97; i < 123; i++) {
   codes[String.fromCharCode(i)] = i - 32;
 } // numbers
 for (var i = 48; i < 58; i++) {
@@ -3190,9 +3188,9 @@ var $export = function $export(type, name, source) {
     // prevent global pollution for namespaces
     exports[key] = IS_GLOBAL && typeof target[key] != 'function' ? source[key]
     // bind timers to global for call from export context
-    : IS_BIND && own ? ctx(out, global)
+    : IS_BIND && own ? ctx(out, global
     // wrap global constructors for prevent change them in library
-    : IS_WRAP && target[key] == out ? function (C) {
+    ) : IS_WRAP && target[key] == out ? function (C) {
       var F = function F(a, b, c) {
         if (this instanceof C) {
           switch (arguments.length) {
@@ -14256,9 +14254,9 @@ exports.default = function (arr) {
 
 // getting tag from 19.1.3.6 Object.prototype.toString()
 var cof = __webpack_require__(92),
-    TAG = __webpack_require__(29)('toStringTag')
+    TAG = __webpack_require__(29)('toStringTag'
 // ES3 wrong here
-,
+),
     ARG = cof(function () {
   return arguments;
 }()) == 'Arguments';
@@ -14276,9 +14274,9 @@ module.exports = function (it) {
   // @@toStringTag case
   : typeof (T = tryGet(O = Object(it), TAG)) == 'string' ? T
   // builtinTag case
-  : ARG ? cof(O)
+  : ARG ? cof(O
   // ES3 arguments fallback
-  : (B = cof(O)) == 'Object' && typeof O.callee == 'function' ? 'Arguments' : B;
+  ) : (B = cof(O)) == 'Object' && typeof O.callee == 'function' ? 'Arguments' : B;
 };
 
 /***/ }),
@@ -24057,9 +24055,8 @@ module.exports = { "default": __webpack_require__(249), __esModule: true };
     } else if (iosdevice) {
       result = {
         name: iosdevice == 'iphone' ? 'iPhone' : iosdevice == 'ipad' ? 'iPad' : 'iPod'
-      };
-      // WTF: version is not part of user agent in web apps
-      if (versionIdentifier) {
+        // WTF: version is not part of user agent in web apps
+      };if (versionIdentifier) {
         result.version = versionIdentifier;
       }
     } else if (/googlebot/i.test(ua)) {
@@ -25108,9 +25105,9 @@ $export($export.S + $export.F, 'Object', { assign: __webpack_require__(264) });
 "use strict";
 
 
-var $export = __webpack_require__(35);
+var $export = __webpack_require__(35
 // 19.1.2.2 / 15.2.3.5 Object.create(O [, Properties])
-$export($export.S, 'Object', { create: __webpack_require__(97) });
+);$export($export.S, 'Object', { create: __webpack_require__(97) });
 
 /***/ }),
 /* 276 */

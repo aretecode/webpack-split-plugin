@@ -20,6 +20,7 @@
     "babel-preset-stage-0": "^6.24.1",
     "chain-able": "^1.0.0",
     "css-loader": "^0.28.4",
+    "extract-text-webpack-plugin": "^2.1.0",
     "file-chain": "^0.0.3",
     "flipfile": "^0.0.13",
     "fliplog": "^0.2.7",
