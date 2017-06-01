@@ -4,6 +4,7 @@ var webpack = require('webpack')
 var log = require('fliplog')
 var HtmlWebpackPlugin = require('webpack-html-plugin')
 var WebpackSplitPlugin = require('./webpack-split-plugin')
+var ExtractTextPlugin = require('extract-text-webpack-plugin');
 
 var rootPath = path.resolve(__dirname, '.')
 var alias = {
@@ -69,6 +70,10 @@ var config = {
   externals: {},
 
   plugins: [
+    new ExtractTextPlugin({
+      filename: '[name].css',
+      allChunks: true
+    }),
     new WebpackSplitPlugin({
       debug: 'spinner',
       name,
