@@ -1,5 +1,5 @@
 const log = require('fliplog')
-const Cleaner = require('./cleaner')
+const Cleaner = log.clean // require('./cleaner')
 const CollectionManager = require('./CollectionManager')
 
 const collection = new CollectionManager()
@@ -7,8 +7,19 @@ let nextIdent = 0
 
 class WebpackSplitPlugin {
   constructor(options) {
+    // collection options
     this.shouldDebug = options.debug || false
     collection.debug(options.debug || false)
+    if (options.debug) {
+      if (options.debug.includes('spinner')) collection.log('spinner')
+      if (options.debug.includes('verbose')) collection.log('verbose')
+    }
+    if (options.limitSize) {
+      collection.limitSize(options.limitSize)
+    }
+    if (options.limitPieces) {
+      collection.limitPieces(options.limitPieces)
+    }
     if (options.totalSize) {
       let totalSize = options.totalSize
       if (typeof totalSize === 'string') {
@@ -20,7 +31,25 @@ class WebpackSplitPlugin {
       }
       collection.totalSize(totalSize)
     }
+    collection.updateFormula()
+    const { passthrough, pieces } = collection.entries()
 
+    // @TODO update using formula size when specifying SIZE
+    // name updating:
+    // take a single name, remap it to match the specified pieces
+    if (!passthrough && pieces && options.name && !options.names) {
+      const name = options.name
+      delete options.name
+
+      options.names = name
+        .repeat(pieces - 1)
+        .split(name)
+        .map((n, i) => name + i)
+
+      log.yellow(`\nturned .name (${name}) into .names ${options.names}`).echo()
+    }
+
+    // chunk options
     const normalizedOptions = this.normalizeOptions(options)
     this.chunkNames = normalizedOptions.chunkNames
     this.filenameTemplate = normalizedOptions.filenameTemplate
@@ -122,7 +151,7 @@ You can however specify the name of the async chunk by passing the desired strin
           // iterate over all our new chunks
           targetChunks.forEach((targetChunk, idx) => {
             // this.debug({ targetChunk, idx })
-            log.data({ idx }).echo()
+            // log.data({ idx }).echo()
 
             /**
   					 * These chunks are subject to get "common" modules extracted and moved to the common chunk
@@ -537,7 +566,9 @@ Take a look at the "name"/"names" or async/children option.`
   debug(chunks) {
     // this is blacklist, we also want to do whitelist
     // we'd like to keep `module`, `chunk`, `parnet`
-    const cleanedChunks = Cleaner.init(chunks)
+    const cleanedChunks = log
+      .cleaner(true)
+      .obj(chunks)
       // .debug()
       .keys([
         /parser/,

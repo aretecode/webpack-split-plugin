@@ -11,6 +11,13 @@ var alias = {
   src: rootPath + '/src',
 }
 
+var split = {
+  limitSize: 200000,
+  // limitPieces: 10,
+  name: 'eh',
+}
+var { limitSize, limitPieces, name } = split
+
 var config = {
   cache: false,
   entry: {
@@ -68,10 +75,11 @@ var config = {
       allChunks: true
     }),
     new WebpackSplitPlugin({
-      debug: true,
-      name: 'eh',
+      debug: 'spinner',
+      name,
       filename: '[name]-split.js',
-
+      limitPieces,
+      limitSize,
       // optional, figures it out after first run, needs to go in docs
       // totalSize: '1937kb', // 1.937mb
     }),

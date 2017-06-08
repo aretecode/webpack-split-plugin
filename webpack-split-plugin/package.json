@@ -1,6 +1,6 @@
 {
   "name": "webpack-split-plugin",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "custom code splitting in webpack [wip]",
   "main": "index.js",
   "module": "index.js",
@@ -8,14 +8,15 @@
     "test": "ava --verbose"
   },
   "dependencies": {
-    "chain-able": "^1.0.0",
+    "chain-able": "^2.0.1",
     "file-chain": "^0.0.3",
     "flipfile": "^0.0.13",
-    "fliplog": "^0.2.7",
     "lodash.clonedeep": "^4.5.0"
   },
   "devDependencies": {
     "ava": "*",
+    "fliplog": "^0.3.9",
+    "pretty-error": "^2.1.0",
     "webpack": "*"
   },
   "keywords": [
