@@ -1,0 +1,3 @@
+- [ ] support for commonchunks - might already work, but needs tests
+- [ ] more tests
+- [ ] externalize all default functionality as custom functionality
