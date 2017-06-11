@@ -1,0 +1,19 @@
+# 0.3.0
+- docs
+  - started docs
+  - added changelog
+  - started readme
+  - started tests for the plugin
+- refactor
+  - moved structure so that the example is inside of the plugin, not the plugin inside of the demo
+  - split Files into a file
+  - added .setup
+  - added .eslint
+- deps
+  - refactor out forked dependencies into a folder
+  - experiment with a `size-of`
+  - update dependencies
+- custom
+  - start the customizations with .split & .splits & .custom
+  - added matchChain & forked matcher
+  - changed chunkNames in SplitPlugin to be created right away / upon instantiation so customizations have access to it when needed
