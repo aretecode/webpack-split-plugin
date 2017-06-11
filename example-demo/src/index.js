@@ -1,0 +1,7 @@
+require('./index.scss')
+require('material-ui')
+const eh = require('./test')
+const noop = require('./noop')
+const noop2 = require('./noop')
+const plx = require('./plx')
+console.log({ noop, eh })
