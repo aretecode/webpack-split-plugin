@@ -3,8 +3,8 @@ var pkg = require('./package.json')
 var webpack = require('webpack')
 var log = require('fliplog')
 var HtmlWebpackPlugin = require('webpack-html-plugin')
-var WebpackSplitPlugin = require('./webpack-split-plugin')
-var ExtractTextPlugin = require('extract-text-webpack-plugin');
+var ExtractTextPlugin = require('extract-text-webpack-plugin')
+var WebpackSplitPlugin = require('../src/index.js')
 
 var rootPath = path.resolve(__dirname, '.')
 var alias = {
@@ -16,7 +16,7 @@ var split = {
   // limitPieces: 10,
   name: 'eh',
 }
-var { limitSize, limitPieces, name } = split
+var {limitSize, limitPieces, name} = split
 
 var config = {
   cache: false,
@@ -31,7 +31,7 @@ var config = {
     library: 'demo',
   },
   resolve: {
-    alias: alias,
+    alias,
   },
   module: {
     rules: [
@@ -72,16 +72,17 @@ var config = {
   plugins: [
     new ExtractTextPlugin({
       filename: '[name].css',
-      allChunks: true
+      allChunks: true,
     }),
     new WebpackSplitPlugin({
-      debug: 'spinner',
       name,
+      debug: 'spinner', // or 'verbose' or false
+      // names: ['eh-one', 'eh-two', 'eh-three'],
       filename: '[name]-split.js',
       limitPieces,
       limitSize,
       // optional, figures it out after first run, needs to go in docs
-      // totalSize: '1937kb', // 1.937mb
+      totalSize: '1937kb', // 1.937mb
     }),
 
     // no need to use this currently, but can be helpful (when cache is off)

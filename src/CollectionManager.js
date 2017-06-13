@@ -6,96 +6,60 @@
  *  returns result
  */
 
-const { statSync } = require('fs')
-const { resolve } = require('path')
-const { exists, write, read } = require('flipfile')
+const {resolve} = require('path')
 const log = require('fliplog')
-const FileChain = require('file-chain')
-const { Chain, ChainedSet } = require('chain-able')
-const { isNum, formula } = require('./deps')
+const {Chain, ChainedSet, traverse} = require('./deps')
+const {isNum, formula, sizeof} = require('./deps')
+const {File, FileCollection, persistance} = require('./Files')
+const {CustomSplit, testFactory, customFactory} = require('./CustomSplit')
+const cleanChunks = require('./deps/clean-chunks')
 
 /**
- * @desc loads file for collecting stats
- * @type {FileChain}
- */
-const persistance = FileChain.init()
-  .dir(process.cwd())
-  .src('.file-collection-stats.json')
-  .json()
-  .load()
-  .setIfNotEmpty('totalSize', 0)
-  .setIfNotEmpty('files', [])
-  .setIfNotEmpty('groups', {})
-
-/**
- * @classdesc simple wrapper around files
- */
-class FileCollection {
-  constructor() {
-    this.files = [] // persistance.get('files')
-  }
-  add(file) {
-    this.files.push(file)
-    return this
-  }
-  toArray() {
-    return this.files
-  }
-  size() {
-    return this.files.reduce((totalSize, file) => totalSize + file.size, 0)
-  }
-}
-
-/**
- * @classdesc simple wrapper around the file, reads it, sets size
- * @prop {WebpackModule} module
- * @prop {filename} string absolute path
- * @prop {number} size bytesize @see fs.statSync
- */
-class File {
-  constructor(filename) {
-    const stats = statSync(filename)
-    this.filename = filename
-    this.size = stats.size
-  }
-}
-
-/**
+ * @classdesc splitter chain is the instance chain
+ *   -----
+ *   data:
+ *    collections: Set()
+ *
+ *   config:
+ *   - totalSize
+ *   - currentSize
+ *   - updateFormula
+ *
+ *   util:
+ *   - log
+ *   - validate
+ *   - spinner
+ *
+ *   lifecycle:
+ *   - next
+ *   - addCollection
+ *   - getCollections
+ *   - getCurrentGroup
+ *   - handle
+ *   - complete
+ *
+ * ------
+ *
  * @TODO
  * - [ ] add config to name output limitPieces
- * - [ ] improve debug output for which collection is being used
- * - [ ] todos in addcollection (not dynamic)
  * - [ ] callback customizer fns
+ * - [ ] put all default formula functionality as an external customizer
  */
 class CollectionManager extends Chain {
-  /**
-   * @inheritdoc
-   * @desc   extends prop to add on every call
-   * @see    ChainedMap.extend
-   * @param  {Array<string>} methods
-   * @return {CollectionManager} @chainable
-   */
-  extendAddition(methods) {
-    methods.forEach(method => {
-      this.set(method, 0)
-      // could be typed too ^w^
-      this[method] = number => this.set(method, this.get(method) + number)
-    })
-    return this
-  }
-
   /**
    *  limitPieces: 2, limitSize: 0
    * @param  {Object} [options={ limitPieces: 2 }]
    */
-  constructor(options = {}) {
-    super()
+  constructor(parent) {
+    super(parent)
 
-    const { limitSize, limitPieces } = options
+    // @TODO: update this
+    const options = {}
+    const {limitSize, limitPieces} = options
 
     /* prettier-ignore */
     this
-      .extend(['splitter'])
+      // .extend(['custom'])
       .extendWith(['passthrough'], true)
       .extendAddition(['totalSize', 'currentSize'])
       .extendIncrement(['group', 'invalid'])
@@ -118,10 +82,35 @@ class CollectionManager extends Chain {
       .when(limitPieces, () => this.limitPieces(limitPieces))
       .set('group', -1) // since we use .next to go to 0 to start
 
+    this.log = () => log
+    this.echo = text => this.spinner(text)
+    this.addGroup = group =>
+      group ? this.addCollection(group) : this.addCollection()
+
     this.spinner('splitting...')
-    // const ora = log.requirePkg('ora')('spinner eh...', 'dot1')
-    // log.quick(ora)
-    // ora.start()
+  }
+
+  custom(custom) {
+    if (custom instanceof CustomSplit) {
+      return this.set('custom', customFactory(custom)).setup()
+    } else {
+      return this.set('custom', custom)
+    }
+  }
+
+  /**
+   * @event setup
+   * @desc @modifies this.setup, this.collections
+   * @return {CollectionManager} @chainable
+   */
+  setup() {
+    if (this.has('setup')) return this
+    this.collections = new ChainedSet(this)
+    this.set('setup', true)
+    if (this.has('custom.override.setup')) {
+      return this.get('custom.override.setup').call(this, this)
+    }
+    return this
   }
 
   /**
@@ -129,33 +118,47 @@ class CollectionManager extends Chain {
    * @param  {string} level
    * @return {CollectionManager} @chainable
    */
-  log(level) {
+  loglevel(level) {
     if (level === 'verbose') this.set('useVerbose', true)
     if (level === 'spinner') this.set('useSpinner', true)
     return this
   }
 
   /**
+   * @event .validate
    * @NOTE (it could default to a specific size)
    * @throws Error when no limitSize or limitPieces are provided )
    * @return {CollectionManager} @chainable
    */
   validate() {
-    if (this.get('invalid') !== 2) return this
+    const hasOverride = this.has('custom.override.validate')
+    const hasEvent = this.has('custom.event.validate')
+    const hasCustom = this.has('custom')
 
-    log
+    if (hasOverride) {
+      return this.get('custom.override.validate').call(this, this)
+    }
+    if (hasEvent) {
+      this.get('custom.event.validate').call(this, this)
+    }
+
+    if (this.get('invalid') !== 2 || hasCustom) {
+      return this
+    }
+    return log
       .red(`WebpackSplitPlugin: must provide either limitSize or limitPieces`)
       .data(this.entries())
       .exit(false)
   }
 
   /**
+   * @alias echo
    * @desc start / update spinner, output config once
    * @param  {string} text
    * @return {CollectionManager} @chainable
    */
   spinner(text) {
-    let { spinner, debug, useSpinner } = this.entries()
+    let {spinner, debug, useSpinner} = this.entries()
 
     if (!this.outputConfig) {
       setTimeout(() => log.fmtobj(this.entries()).bold('config:').echo(), 10)
@@ -184,14 +187,19 @@ class CollectionManager extends Chain {
   updateFormula() {
     const entries = this.entries()
 
-    this.tap('formula', () => formula(entries))
-    this.collections = new ChainedSet(this)
+    if (this.has('custom')) {
+      this.log().underline('using custom formula').data('\n\n').echo()
+      return this
+    }
+    this.setup()
 
-    const { totalSize } = entries
-    const { number, size } = this.get('formula')(totalSize)
+    this.tap('formula', () => formula(entries))
+
+    const {totalSize} = entries
+    const {number, size} = this.get('formula')(totalSize)
 
     // this.spinner('updating formula')
-    log.green('updating formula').data({ number, size }).echo(this.get('debug'))
+    log.green('updating formula').data({number, size}).echo(this.get('debug'))
 
     for (let i = 0; i < number; i++) {
       this.addCollection()
@@ -201,12 +209,17 @@ class CollectionManager extends Chain {
   }
 
   /**
+   * @event .next
    * @see this.current
    * @desc increments current group
    *       @modifies this.current
    * @return {CollectionManager} @chainable
    */
   next() {
+    if (this.has('custom.override.next')) {
+      return this.get('custom.override.next').call(this, this)
+    }
+
     let group = this.tap('group', num => num + 1).get('group')
     const collections = this.collections.values()
 
@@ -227,20 +240,68 @@ class CollectionManager extends Chain {
     }
 
     this.current = collections[group]
+
+    if (this.has('custom.event.next')) {
+      this.get('custom.event.next').call(this, this)
+    }
+
     return this
   }
 
   /**
    * @see FileCollection
    * @desc @modifies this.collections
+   * @param {FileCollection} group
+   * @param {string | null} name
    * @return {CollectionManager} @chainable
    */
-  addCollection() {
-    this.collections.add(new FileCollection(this))
+  addCollection(group = new FileCollection(this), name = null) {
+    this.collections.add(group)
+    // store for later
+    if (name && this.has(name) === false) {
+      this.set(name, group)
+    }
+
     return this
   }
 
   /**
+   * @since 0.3.0
+   * @desc expressive for [v]
+   * @see      .addCollection
+   * @param {string} name
+   * @return {SplitPlugin} @chainable
+   */
+  addGroupIfEmpty(name) {
+    if (!this.parent.chunkNames.includes(name)) {
+      this.parent.chunkNames.push(name)
+    }
+
+    if (this.has(name) === false) {
+      log.underline('adding new group').data(name).echo(this.get('debug'))
+      return this.addCollection(new FileCollection(this), name)
+    }
+
+    // log was empty
+    return this
+  }
+
+  /**
+   * @since 0.3.0
+   * @param {string | Set} name
+   * @return {SplitPlugin} @chainable
+   */
+  setCurrent(name) {
+    log.dim('setting current').data(name).echo(false)
+
+    this.current = typeof name === 'string'
+      ? this.get(name)
+      : name || this.current
+    return this
+  }
+
+  /**
+   * @since 0.3.0
    * @desc maps collections to return Array of Collections of Files
    * @return {Array<File>}
    */
@@ -249,6 +310,7 @@ class CollectionManager extends Chain {
   }
 
   /**
+   * @event .getCurrentGroup
    * @desc puts the file into the right group/chunk/collection
    * @example limitPieces: 2, totalSize: 1000
    *          if (currentSize > 500) return 0
@@ -256,15 +318,14 @@ class CollectionManager extends Chain {
    * @return {FileCollection}
    */
   getCurrentGroup() {
-    // data
-    const entries = this.entries()
-    const { currentSize, totalSize, limitPieces, limitSize } = entries
-    const { size, number } = this.get('formula')(totalSize)
-
+    if (this.has('custom.override.getCurrentGroup')) {
+      return this.get('custom.override.getCurrentGroup').call(this, this)
+    }
     // safety
     if (!this.current) {
       this.next()
     }
+
     // add empty collection if calling next did not have a real value
     if (!this.current) {
       // this.spinner('\nusing passthrough, have to do a dry run for total size\n')
@@ -275,6 +336,11 @@ class CollectionManager extends Chain {
 
       return this.addCollection().passthrough().next().current
     }
+
+    // data
+    const entries = this.entries()
+    const {currentSize, totalSize, limitPieces, limitSize} = entries
+    const {size, number} = this.get('formula')(totalSize)
 
     const chalk = log.chalk()
     const currentC = chalk.bold(this.current ? this.current.size() : 0)
@@ -300,7 +366,7 @@ class CollectionManager extends Chain {
       })
       .echo(!!this.get('useVerbose'))
 
-    if (this.current && this.current.size() >= size) {
+    if (this.current.size() >= size) {
       if (this.has('spinner')) {
         const spinner = this.get('spinner')
         spinner.succeed(spinner.text)
@@ -308,15 +374,31 @@ class CollectionManager extends Chain {
       this.delete('spinner').next()
     }
 
+    if (this.has('custom.event.getCurrentGroup')) {
+      this.get('custom.event.getCurrentGroup').call(this, this)
+    }
+
     return this.current
   }
 
   /**
+   * @event .complete
    * @TODO should add callbacks for methods
    * @desc marked as complete, persists totalSize
    * @return {ChainedMap} @chainable
    */
   complete() {
+    log.blue('\ncompleted!').echo()
+
+    // for debugging
+    // log.verbose(3).data(this.collections, this.parent.chunkNames).exit()
+    // cleanChunks(this.collections)
+
+    if (this.has('custom.override.complete')) {
+      return this.get('custom.override.complete').call(this, this)
+    }
+
+    // --- @TODO: custom.default.complete
     this.set('complete', true)
     const totalSize = this.get('totalSize')
 
@@ -327,11 +409,16 @@ class CollectionManager extends Chain {
       .when(
         this.get('useVerbose'),
         () => log.fmtobj(this.entries()),
-        () => log.data({ totalSize })
+        () => log.data({totalSize})
       )
       .echo(this.get('debug'))
 
     persistance.set('totalSize', totalSize).write()
+    // --- ;
+
+    if (this.has('custom.event.complete')) {
+      this.get('custom.event.complete').call(this, this)
+    }
 
     return this
   }
@@ -339,6 +426,7 @@ class CollectionManager extends Chain {
   // -------------------------- splitter here ------------------------------
 
   /**
+   * @event .handle
    * @NOTE   this originally was module.userRequest (absolute file path)
    *         but keeping reference to the module here is better/simpler
    * @desc   handles a modile
@@ -349,13 +437,23 @@ class CollectionManager extends Chain {
    * @return {ChainedMap} @chainable
    */
   handle(module) {
-    const { totalSize, currentSize } = this.entries()
     const filename = module.userRequest
 
-    if (exists(filename)) {
-      const file = new File(filename)
+    if (this.has('custom.event.preHandle')) {
+      this.get('custom.event.preHandle').call(this, this)
+    }
+
+    const file = new File(filename)
+    if (file.exists()) {
       file.module = module
 
+      // could add a group here
+      if (this.has('custom.override.handle')) {
+        return this.get('custom.override.handle')(file, this)
+      }
+
+      // --- @TODO: custom.default.handle
+      const {totalSize, currentSize} = this.entries()
       this.currentSize(file.size)
 
       // so if we do not have a total size,
@@ -364,6 +462,11 @@ class CollectionManager extends Chain {
       }
 
       this.getCurrentGroup().add(file)
+      // --- ;
+    }
+
+    if (this.has('custom.event.postHandle')) {
+      this.get('custom.event.postHandle').call(this, this)
     }
 
     return this

@@ -1,0 +1,28 @@
+# 0.3.0
+# 0.3.0
+- 📚 docs
+  - 🆕 started docs
+  - 📘 api docs example start
+  - 🔊 + changelog
+  - 🆙📖 updated readme
+  - 🔬 started tests for the plugin
+  - 🆕📝 start todos
+- 🏛️refactor
+  - 🏛📒🚚 moved structure so that the example is inside of the plugin, not the plugin inside of the demo
+- 🎁 features
+  - 🎁🤸 split Files into a file
+  - 🎁 + .setup
+  - 🎁👕 + .eslint
+  - 🎁🛒 + .addGroupIfEmpty
+  - 🎁 + .setCurrent
+- 📦🐈 deps
+  - 📦🏛️🍴 refactor out forked dependencies into a folder
+  - 📦⚗ experiment with a `size-of`
+  - 📦🆙 update dependencies
+- custom
+  - 🆕 start the customizations with .split & .splits & .custom
+  - 🎯🎁 + matchChain & forked matcher
+  - 🆙 changed chunkNames 🛁 moved cleaner
+  	- >🆙 changed chunkNames in SplitPlugin to be created right away / upon instantiation so customizations have access to it when needed, 🛁 moved cleaner out of it into deps
+- ⚙📜 example/demo configs runnable from root pkg script
+- 👽 exports

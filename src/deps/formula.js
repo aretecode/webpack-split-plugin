@@ -1,9 +1,3 @@
-function isNum(x) {
-  if (typeof x === 'number') return true
-  if (/^0x[0-9a-f]+$/i.test(x) === true) return true
-  return /^[-+]?(?:\d+(?:\.\d*)?|\.\d+)(e[-+]?\d+)?$/.test(x)
-}
-
 const ceil = num => Math.ceil(num)
 const formula = config => currentSize => {
   const { limitSize, limitPieces } = config
@@ -35,4 +29,4 @@ const formula = config => currentSize => {
   //...
 }
 
-module.exports = { isNum, formula }
+module.exports = formula

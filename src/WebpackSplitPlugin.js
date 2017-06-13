@@ -1,18 +1,33 @@
 const log = require('fliplog')
-const Cleaner = log.clean // require('./cleaner')
 const CollectionManager = require('./CollectionManager')
+const CustomSplit = require('./CustomSplit')
+const cleanChunks = require('./deps/clean-chunks')
 
-const collection = new CollectionManager()
+let collection = null
 let nextIdent = 0
 
 class WebpackSplitPlugin {
+  static split(a, b, c) {
+    return new CustomSplit(a, b, c)
+  }
+
   constructor(options) {
+    // to push names up from the manager
+    this.chunkNames = []
+    collection = new CollectionManager(this)
+
     // collection options
     this.shouldDebug = options.debug || false
     collection.debug(options.debug || false)
-    if (options.debug) {
-      if (options.debug.includes('spinner')) collection.log('spinner')
-      if (options.debug.includes('verbose')) collection.log('verbose')
+    if (options.debug && options.debug.includes) {
+      if (options.debug.includes('spinner')) collection.loglevel('spinner')
+      if (options.debug.includes('verbose')) collection.loglevel('verbose')
+    }
+    if (options.custom) {
+      collection.custom(options.custom)
+    }
+    if (options.formula) {
+      collection.fomrula(options.formula)
     }
     if (options.limitSize) {
       collection.limitSize(options.limitSize)
@@ -32,7 +47,7 @@ class WebpackSplitPlugin {
       collection.totalSize(totalSize)
     }
     collection.updateFormula()
-    const { passthrough, pieces } = collection.entries()
+    const {passthrough, pieces} = collection.entries()
 
     // @TODO update using formula size when specifying SIZE
     // name updating:
@@ -47,11 +62,13 @@ class WebpackSplitPlugin {
         .map((n, i) => name + i)
 
       log.yellow(`\nturned .name (${name}) into .names ${options.names}`).echo()
+    } else if (!options.name && !options.names) {
+      options.names = []
     }
 
     // chunk options
     const normalizedOptions = this.normalizeOptions(options)
-    this.chunkNames = normalizedOptions.chunkNames
+    this.chunkNames = this.chunkNames.concat(normalizedOptions.chunkNames)
     this.filenameTemplate = normalizedOptions.filenameTemplate
     this.minChunks = normalizedOptions.minChunks
     this.selectedChunks = normalizedOptions.selectedChunks
@@ -103,7 +120,7 @@ You can however specify the name of the async chunk by passing the desired strin
       ? [].concat(options.name || options.names)
       : undefined
     return {
-      chunkNames: chunkNames,
+      chunkNames,
       filenameTemplate: options.filename,
       minChunks: options.minChunks,
       selectedChunks: options.chunks,
@@ -127,6 +144,7 @@ You can however specify the name of the async chunk by passing the desired strin
           if (compilation[this.ident]) return
           compilation[this.ident] = true
           collection.complete()
+          // log.quick(collection.getCollections())
 
           /**
   				 * Creates a list of "common"" chunks based on the options.
@@ -359,7 +377,7 @@ Take a look at the "name"/"names" or async/children option.`
     if (targetChunk.parents.length > 0) {
       compilation.errors.push(
         new Error(
-          "WebpackSplitPlugin: While running in normal mode it's not allowed to use a non-entry chunk (" +
+          'WebpackSplitPlugin: While running in normal mode it\'s not allowed to use a non-entry chunk (' +
             targetChunk.name +
             ')'
         )
@@ -488,6 +506,18 @@ Take a look at the "name"/"names" or async/children option.`
    */
   getModulesMagic(index) {
     const groups = collection.getCollections()
+
+    // @NOTE: debugging
+    // log.quick(groups)
+    // log.quick(
+    //   [].concat(...groups.map(group => group.map(file => file.filename))),
+    //   index
+    // )
+    // log.verbose(1).data(groups[index]).echo()
+    // log.quick(groups.length, index)
+
+    // safety
+    if (!groups[index]) return []
     return groups[index].map(file => file.module)
   }
 
@@ -564,51 +594,7 @@ Take a look at the "name"/"names" or async/children option.`
   // ********************************************
 
   debug(chunks) {
-    // this is blacklist, we also want to do whitelist
-    // we'd like to keep `module`, `chunk`, `parnet`
-    const cleanedChunks = log
-      .cleaner(true)
-      .obj(chunks)
-      // .debug()
-      .keys([
-        /parser/,
-        /loc/,
-        /range/,
-        /dependencies/,
-        /dependenciesWarnings/,
-        /strict/,
-        /debug/,
-        /loaders/,
-        /assets/,
-        /meta/,
-        /warnings/,
-        /used/,
-        /rawRequest/,
-        /resource/,
-        /contextDependencies/,
-        /_source/,
-        /built/,
-        /cachedSource/,
-        /issuer/,
-        /index/,
-        /index2/,
-        /id/,
-        /portableId/,
-        /lastId/,
-        /cacheable/,
-        /building/,
-        /depth/,
-        /buildTimestamp/,
-        /optional/,
-        /errors/,
-        /variables/,
-        /rendered/,
-        /error/,
-        /__NormalModuleFactoryCache/,
-      ])
-      .clean()
-
-    log.verbose(100).data({ cleanedChunks }).exit()
+    cleanChunks(chunks)
   }
 }
 
